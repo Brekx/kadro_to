@@ -1,5 +1,4 @@
 import icalendar as ical
-import pytz
 from datetime import datetime
 
 cal = ical.Calendar()
