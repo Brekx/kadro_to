@@ -43,6 +43,11 @@ def getWeekCalendar(start: datetime, end: datetime) -> dict:
       end = datetime(int(shift['end_timestamp'][0:4]), int(shift['end_timestamp'][5:7]), int(shift['end_timestamp'][8:10]), int(shift['end_timestamp'][11:13]), int(shift['end_timestamp'][14:16]), int(shift['end_timestamp'][17:19]))
       new_event = {'dtstart' : start, 'dtend' : end, 'location' : shift['job_title']['title'], 'note' : ""}
       employee_shifts.append(new_event)
+    for shift in employee['shifts']:
+      start = datetime(int(shift['start_timestamp'][0:4]), int(shift['start_timestamp'][5:7]), int(shift['start_timestamp'][8:10]), int(shift['start_timestamp'][11:13]), int(shift['start_timestamp'][14:16]), int(shift['start_timestamp'][17:19]))
+      end = datetime(int(shift['end_timestamp'][0:4]), int(shift['end_timestamp'][5:7]), int(shift['end_timestamp'][8:10]), int(shift['end_timestamp'][11:13]), int(shift['end_timestamp'][14:16]), int(shift['end_timestamp'][17:19]))
+      new_event = {'dtstart' : start, 'dtend' : end, 'location' : shift['job_title']['title'], 'note' : ""}
+      employee_shifts.append(new_event)
     employee_record = {'name' : employee['first_name'] + ' ' + employee['last_name'], \
                         'schedule' : employee_shifts}
     schedule[employee['id']] = employee_record
@@ -81,7 +86,7 @@ def getWeekCalendar(start: datetime, end: datetime) -> dict:
 
 def getNextTwoWeekCalendar() -> dict:
   from datetime import datetime, timedelta
-  start = datetime.today()
+  start = datetime.today() - timedelta(4)
   end = start + timedelta(14)
   jumpingCal = {}
   if start.month != end.month:
@@ -94,4 +99,26 @@ def getNextTwoWeekCalendar() -> dict:
       ret[calId]['schedule'] += cal['schedule']
     else:
       ret[calId] = cal
+  return ret
+
+def getShifts(start: datetime, end: datetime) -> dict:
+  from datetime import datetime, timedelta
+  ret = {}
+  while start != end:
+    tend = end
+    if start.month != tend.month:
+      tend = datetime(start.year, start.month+1, 1, 0, 1) - timedelta(1)
+      for calId, cal in getWeekCalendar(start, tend).items():
+        if calId in ret:
+          ret[calId]['schedule'] += cal['schedule']
+        else:
+          ret[calId] = cal
+      start = tend + timedelta(1)
+    else:
+      for calId, cal in getWeekCalendar(start, end).items():
+        if calId in ret:
+          ret[calId]['schedule'] += cal['schedule']
+        else:
+          ret[calId] = cal
+      start = end
   return ret

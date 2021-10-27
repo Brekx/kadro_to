@@ -32,8 +32,8 @@ def checkIfCalendarExist(name, calList) -> int:
   return 0
 
 def getCalendars():
-  import karometr_html
-  kardCal = karometr_html.getNextWeekCalendar()
+  import kadrometr_html
+  kardCal = kadrometr_html.getNextWeekCalendar()
   calList1 = service.calendarList().list().execute()
   calList2 = service.calendarList().list(pageToken=calList1['nextPageToken']).execute()["items"]
   calList1 = calList1['items']
@@ -42,7 +42,7 @@ def getCalendars():
 
 
 def addCalendars():  
-  import time, datetime, karometr_html
+  import time, datetime, kadrometr_html
   calendars = getCalendars()
   kardCal = calendars[0]
   calList = calendars[1]
