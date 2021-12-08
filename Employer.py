@@ -16,8 +16,8 @@ class Shift:
   
   def addToGCal(self, service, calendarId: str):
     event = {
-      'start' : {'dateTime' : self.start.strftime("%Y-%m-%dT%H:%M:00+02:00")}, 
-      'end' : {'dateTime' : self.end.strftime("%Y-%m-%dT%H:%M:00+02:00")},
+      'start' : {'dateTime' : self.start.strftime("%Y-%m-%dT%H:%M:00+01:00")}, 
+      'end' : {'dateTime' : self.end.strftime("%Y-%m-%dT%H:%M:00+01:00")},
       'summary' : "Cinema Work",
       'location' : self.place,
       'description' : self.note
@@ -36,9 +36,7 @@ class Employee:
   toAdd: list
   toRemove: list
 
-  
-  def getGoogleShifts(self, start: datetime, end: datetime) -> None:
-    '''Fills employer shifts'''
+  def getId(self) -> None:
     tmp_list = self.service.calendarList().list().execute()
     calList = tmp_list['items']
     while 'nextPageToken' in tmp_list:
@@ -48,13 +46,21 @@ class Employee:
       if cal['summary'] == self.name:
         self.id = cal['id']
         break
+
+  def getGoogleShifts(self, start: datetime, end: datetime) -> None:
+    '''Fills employer shifts'''
+    if self.id == 0:
+      throw("No id")
     shifts = self.service.events().list(calendarId=self.id, timeMin=start.strftime("%Y-%m-%dT%H:%M:00.000Z"), timeMax=end.strftime("%Y-%m-%dT%H:%M:00.000Z")).execute()
     for item in shifts['items']:
-      note = ""
-      if 'description' in item:
-        note = item['description']
-      self.employee_google_shifts.append(Shift(start = datetime.strptime(item['start']['dateTime'], "%Y-%m-%dT%H:%M:00+01:00"), \
-        end = datetime.strptime(item['end']['dateTime'], "%Y-%m-%dT%H:%M:00+01:00"), place = item['location'], note = note, id = item['id']))
+      if not 'location' in item or not 'end' in item or not 'start' in item:
+        self.toRemove.append(Shift(None, None, None, None, item['id']))
+      else:
+        note = ""
+        if 'description' in item:
+          note = item['description']
+        self.employee_google_shifts.append(Shift(start = datetime.strptime(item['start']['dateTime'], "%Y-%m-%dT%H:%M:00+01:00"), \
+          end = datetime.strptime(item['end']['dateTime'], "%Y-%m-%dT%H:%M:00+01:00"), place = item['location'], note = note, id = item['id']))
 
   def getKadroShifts(self, all_shifts: dict):
     for id, employee in all_shifts.items():
@@ -62,35 +68,33 @@ class Employee:
         for shift in employee['schedule']:
           self.employee_kadro_shifts.append(Shift(shift['dtstart'], shift['dtend'], shift['location'], shift['note']))
 
-  def __init__(self, service, name: str) -> None:
+  def __init__(self, service, name: str, id: str = "") -> None:
     self.service = service
     self.name = name
-    self.id = ""
+    self.id = id
     self.employee_google_shifts = []
     self.employee_kadro_shifts = []
+    self.toAdd = []
+    self.toRemove = []
 
 
-  def diff(self) -> list:
+  def diff(self):
     '''Method to compare two objects, returns tab of [toAdd, toRemove]'''
-    toAdd = []
-    toRemove = []
     for shiftToAdd in self.employee_kadro_shifts:
       exist = False
       for shift in self.employee_google_shifts:
         if shiftToAdd.start == shift.start and shiftToAdd.end == shift.end and shiftToAdd.place == shift.place and shiftToAdd.note == shift.note:
           exist = True
       if not exist:
-        toAdd.append(shiftToAdd)
+        self.toAdd.append(shiftToAdd)
     for shiftToRemove in self.employee_google_shifts:
       exist = False
       for shift in self.employee_kadro_shifts:
         if shiftToRemove.start == shift.start and shiftToRemove.end == shift.end and shiftToRemove.place == shift.place and shiftToRemove.note == shift.note:
           exist = True
       if not exist:
-        toRemove.append(shiftToRemove)
-    self.toAdd = toAdd
-    self.toRemove =toRemove
-    return [toAdd, toRemove]
+        self.toRemove.append(shiftToRemove)
+    # return [toAdd, toRemove]
 
   def resolveChanges(self):
     for shift in self.toAdd:

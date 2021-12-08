@@ -14,11 +14,13 @@ def getActualSchedule(dtstart: datetime, dtend: datetime):
   for key in base.keys():
     if key == 'credentials':
       has_key = True
+      break
   if has_key:
     has_key = False
     for key in base['credentials'].keys():
       if key == 'authToken':
         has_key = True
+        break
   if not has_key or base['credentials']['authToken'] == "":
     r = http.request('POST', 'https://api.kadromierz.pl/security/authentication', fields={'email':base['credentials']['email'], 'password':base['credentials']['password']})
     base['credentials']['authToken'] = json.loads(r.data.decode('utf8').replace("'", '"'))['auth_token']
@@ -26,17 +28,26 @@ def getActualSchedule(dtstart: datetime, dtend: datetime):
   http.headers['Authorization'] = 'AUTH-TOKEN token="' + base['credentials']['authToken'] + '"'
   start = dtstart.strftime("%Y-%m-%d")
   end = dtend.strftime("%Y-%m-%d")
-  r = http.request('GET', 'https://api.kadromierz.pl/locations/7738/schedule?from=' + start + '&to=' + end + '&show_drafts=false')
+  ret = []
+  for loc in ['7738', '7744', '7812', '7741', '7743']:
+    r = http.request('GET', 'https://api.kadromierz.pl/locations/' + loc + '/schedule?from=' + start + '&to=' + end + '&show_drafts=false')
+    data = json.loads(r.data.decode('utf8').replace("'", '"'))
+    if not "schedule" in data:
+      throw("Wrong credentials")
+    for k in data['schedule']['employees']:
+      if not k in ret:
+        ret.append(k)
+    
   if r.status != 200 and r.status != 404:
     base['credentials']['authToken'] = ""
-  return json.loads(r.data.decode('utf8').replace("'", '"'))
+  return ret
 
 def getWeekCalendar(start: datetime, end: datetime) -> dict:
   from datetime import datetime, timedelta
   
   schedule_data = getActualSchedule(start, end)
   schedule = {}
-  for employee in schedule_data['schedule']['employees']:
+  for employee in schedule_data:
     employee_shifts = []
     for shift in employee['shifts_for_other_locations']:
       start = datetime(int(shift['start_timestamp'][0:4]), int(shift['start_timestamp'][5:7]), int(shift['start_timestamp'][8:10]), int(shift['start_timestamp'][11:13]), int(shift['start_timestamp'][14:16]), int(shift['start_timestamp'][17:19]))
