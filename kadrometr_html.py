@@ -29,11 +29,16 @@ def getActualSchedule(dtstart: datetime, dtend: datetime):
   start = dtstart.strftime("%Y-%m-%d")
   end = dtend.strftime("%Y-%m-%d")
   ret = []
-  for loc in ['7738', '7744', '7812', '7741', '7743']:
+  locations = []
+  r = http.request('GET', 'https://api.kadromierz.pl/users/current/locations')
+  data = json.loads(r.data.decode('utf8').replace("'", '"'))
+  for att in data['locations']:
+    locations.append(att['id'])
+  for loc in locations:
     r = http.request('GET', 'https://api.kadromierz.pl/locations/' + loc + '/schedule?from=' + start + '&to=' + end + '&show_drafts=false')
     data = json.loads(r.data.decode('utf8').replace("'", '"'))
     if not "schedule" in data:
-      throw("Wrong credentials")
+      raise Exception("Wrong credentials")
     for k in data['schedule']['employees']:
       if not k in ret:
         ret.append(k)
