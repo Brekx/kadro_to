@@ -17,4 +17,4 @@ I decided to create service which I can run on home raspbery and every hour It w
 - google-auth-oauthlib
 ### Additional files
 - **token** - *token to access google calendar*
-- **credentials.json** - *this file contains setting and pass to kadrometr*
+- **savings.json** - *this file contains setting and pass to kadrometr*
