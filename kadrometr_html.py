@@ -45,6 +45,7 @@ def getActualSchedule(dtstart: datetime, dtend: datetime):
     
   if r.status != 200 and r.status != 404:
     base['credentials']['authToken'] = ""
+    raise Exception("No kadrometr authorization")
   return ret
 
 def getWeekCalendar(start: datetime, end: datetime) -> dict:

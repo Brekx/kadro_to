@@ -5,3 +5,16 @@ Cinemacity uses "kadromierz" as site where all employers are informed about thei
 ## Solution
 I decided to create service which I can run on home raspbery and every hour It will create google calendar events for every employer.
 ![GCalendar view](/docs/fot2.png)
+## Dependeccies
+### Needed python modules:
+- os
+- time
+- json
+- datetime
+- urllib3
+- google-api-python-client 
+- google-auth-httplib2 
+- google-auth-oauthlib
+### Additional files
+- **token** - *token to access google calendar*
+- **credentials.json** - *this file contains setting and pass to kadrometr*

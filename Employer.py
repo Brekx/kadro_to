@@ -1,5 +1,5 @@
 from datetime import datetime
-from http import server
+
 class Shift:
   start: datetime
   end: datetime
@@ -50,7 +50,7 @@ class Employee:
   def getGoogleShifts(self, start: datetime, end: datetime) -> None:
     '''Fills employer shifts'''
     if self.id == 0:
-      throw("No id")
+      raise Exception("No id")
     shifts = self.service.events().list(calendarId=self.id, timeMin=start.strftime("%Y-%m-%dT%H:%M:00.000Z"), timeMax=end.strftime("%Y-%m-%dT%H:%M:00.000Z")).execute()
     for item in shifts['items']:
       if not 'location' in item or not 'end' in item or not 'start' in item:
