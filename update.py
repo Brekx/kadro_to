@@ -22,3 +22,6 @@ def update():
     print(" need to resolve " + str(len(emp.toAdd) + len(emp.toRemove)) + " changes ", end="")
     emp.resolveChanges()
     print("...resolved")
+
+if __name__ == "__main__":
+  update()

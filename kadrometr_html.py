@@ -124,7 +124,7 @@ def getShifts(start: datetime, end: datetime) -> dict:
   while start != end:
     tend = end
     if start.month != tend.month:
-      tend = datetime(start.year, start.month+1, 1, 0, 1) - timedelta(1)
+      tend = (datetime(start.year, start.month + 1, 1, 0, 1) if start.month+1<13 else datetime(start.year + 1, 1, 1, 0, 1)) - timedelta(1)
       for calId, cal in getWeekCalendar(start, tend).items():
         if calId in ret:
           ret[calId]['schedule'] += cal['schedule']
