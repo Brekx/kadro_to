@@ -7,6 +7,7 @@ with open("savings.json", 'r') as inputfile:
     base = {}
 
 def reAuthorization(http):
+  http.headers['Authorization'] = ""
   r = http.request('POST', 'https://api.kadromierz.pl/security/authentication', body=json.dumps(
       {'email': base['credentials']['email'], 'password': base['credentials']['password']}))
   base['credentials']['authToken'] = json.loads(
@@ -33,8 +34,8 @@ def getActualSchedule(dtstart: datetime, dtend: datetime):
   ret = []
   locations = []
   r = http.request('GET', 'https://api.kadromierz.pl/users/current/locations')
-  if(r.status==403):
-    reAuthorization()
+  if(r.status!=200):
+    reAuthorization(http)
     http.headers['Authorization'] = 'AUTH-TOKEN token="' + \
       base['credentials']['authToken'] + '"'
     r = http.request('GET', 'https://api.kadromierz.pl/users/current/locations')
