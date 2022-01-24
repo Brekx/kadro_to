@@ -7,7 +7,7 @@ with open("savings.json", 'r') as inputfile:
     base = {}
 
 def getActualSchedule(dtstart: datetime, dtend: datetime):
-  import urllib3
+  import urllib3, json
   from datetime import datetime
   http = urllib3.PoolManager()
   has_key = False
@@ -22,7 +22,7 @@ def getActualSchedule(dtstart: datetime, dtend: datetime):
         has_key = True
         break
   if not has_key or base['credentials']['authToken'] == "":
-    r = http.request('POST', 'https://api.kadromierz.pl/security/authentication', fields={'email':base['credentials']['email'], 'password':base['credentials']['password']})
+    r = http.request('POST', 'https://api.kadromierz.pl/security/authentication', body=json.dumps({'email':base['credentials']['email'], 'password':base['credentials']['password']}))
     base['credentials']['authToken'] = json.loads(r.data.decode('utf8').replace("'", '"'))['auth_token']
     print("Renewing auth token")
   http.headers['Authorization'] = 'AUTH-TOKEN token="' + base['credentials']['authToken'] + '"'
@@ -100,23 +100,6 @@ def getWeekCalendar(start: datetime, end: datetime) -> dict:
             other_employer_shift['note'] += note if other_employer_shift['note'] == "" else ('\n' + note)
 
   return schedule
-
-def getNextTwoWeekCalendar() -> dict:
-  from datetime import datetime, timedelta
-  start = datetime.today() - timedelta(4)
-  end = start + timedelta(14)
-  jumpingCal = {}
-  if start.month != end.month:
-    end = datetime(start.year, start.month+1, 1, 0, 1) - timedelta(1)
-    delta = timedelta(14) - (end - start)
-    jumpingCal = getWeekCalendar(end + timedelta(1), end + delta)
-  ret = getWeekCalendar(start, end)
-  for calId, cal in jumpingCal.items():
-    if calId in ret:
-      ret[calId]['schedule'] += cal['schedule']
-    else:
-      ret[calId] = cal
-  return ret
 
 def getShifts(start: datetime, end: datetime) -> dict:
   from datetime import datetime, timedelta
