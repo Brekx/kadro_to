@@ -6,32 +6,41 @@ with open("savings.json", 'r') as inputfile:
   except:
     base = {}
 
+def reAuthorization(http):
+  r = http.request('POST', 'https://api.kadromierz.pl/security/authentication', body=json.dumps(
+      {'email': base['credentials']['email'], 'password': base['credentials']['password']}))
+  base['credentials']['authToken'] = json.loads(
+      r.data.decode('utf8').replace("'", '"'))['auth_token']
+  with open("savings.json", 'w') as outputfile:
+    outputfile.write(json.dumps(base))
+  print("Renewed auth token")
+
 def getActualSchedule(dtstart: datetime, dtend: datetime):
-  import urllib3, json
+  import urllib3
   from datetime import datetime
   http = urllib3.PoolManager()
-  has_key = False
-  for key in base.keys():
-    if key == 'credentials':
-      has_key = True
-      break
-  if has_key:
+  has_key = True
+  try:
+    base['credentials']['authToken']
+  except Exception as e:
     has_key = False
-    for key in base['credentials'].keys():
-      if key == 'authToken':
-        has_key = True
-        break
   if not has_key or base['credentials']['authToken'] == "":
-    r = http.request('POST', 'https://api.kadromierz.pl/security/authentication', body=json.dumps({'email':base['credentials']['email'], 'password':base['credentials']['password']}))
-    base['credentials']['authToken'] = json.loads(r.data.decode('utf8').replace("'", '"'))['auth_token']
-    print("Renewing auth token")
-  http.headers['Authorization'] = 'AUTH-TOKEN token="' + base['credentials']['authToken'] + '"'
+    reAuthorization(http)
+  http.headers['Authorization'] = 'AUTH-TOKEN token="' + \
+    base['credentials']['authToken'] + '"'
   start = dtstart.strftime("%Y-%m-%d")
   end = dtend.strftime("%Y-%m-%d")
   ret = []
   locations = []
   r = http.request('GET', 'https://api.kadromierz.pl/users/current/locations')
+  if(r.status==403):
+    reAuthorization()
+    http.headers['Authorization'] = 'AUTH-TOKEN token="' + \
+      base['credentials']['authToken'] + '"'
+    r = http.request('GET', 'https://api.kadromierz.pl/users/current/locations')
+    
   data = json.loads(r.data.decode('utf8').replace("'", '"'))
+  
   for att in data['locations']:
     locations.append(att['id'])
   for loc in locations:
@@ -42,7 +51,7 @@ def getActualSchedule(dtstart: datetime, dtend: datetime):
     for k in data['schedule']['employees']:
       if not k in ret:
         ret.append(k)
-    
+
   if r.status != 200 and r.status != 404:
     base['credentials']['authToken'] = ""
     raise Exception("No kadrometr authorization")
@@ -50,7 +59,7 @@ def getActualSchedule(dtstart: datetime, dtend: datetime):
 
 def getWeekCalendar(start: datetime, end: datetime) -> dict:
   from datetime import datetime, timedelta
-  
+
   schedule_data = getActualSchedule(start, end)
   schedule = {}
   for employee in schedule_data:
@@ -68,16 +77,16 @@ def getWeekCalendar(start: datetime, end: datetime) -> dict:
     employee_record = {'name' : employee['first_name'] + ' ' + employee['last_name'], \
                         'schedule' : employee_shifts}
     schedule[employee['id']] = employee_record
-  
+
   employees_to_fill = list(schedule.keys())
   for employee in range(0, len(schedule)-1): 
     employee_id = employees_to_fill.pop(0)
     for shift in schedule[employee_id]['schedule']:
       for other_employer_id in employees_to_fill:
         for other_employer_shift in schedule[other_employer_id]['schedule']:
-          if( shift['location'] == other_employer_shift['location'] and \
-            (( shift['dtstart'] >= other_employer_shift['dtstart'] and shift['dtstart'] < other_employer_shift['dtend']) or \
-            ( shift['dtstart'] <= other_employer_shift['dtstart'] and shift['dtend'] > other_employer_shift['dtstart']))):
+          if( shift['location'] == other_employer_shift['location'] and
+              (( shift['dtstart'] >= other_employer_shift['dtstart'] and shift['dtstart'] < other_employer_shift['dtend']) or
+               ( shift['dtstart'] <= other_employer_shift['dtstart'] and shift['dtend'] > other_employer_shift['dtstart']))):
             note = schedule[other_employer_id]['name']
             earlier = shift['dtstart'] < other_employer_shift['dtstart']
             later = shift['dtend'] > other_employer_shift['dtend']
