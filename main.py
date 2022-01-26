@@ -11,6 +11,6 @@ while True:
 		os.system("curl -X POST -d \"{\\\"text\\\": \\\"\\\"}\" -H \"Content-Type: application/json\" https://api.pushcut.io/LD6ePZS6z3PNXGXqHHgFU/notifications/KadroError")
 	finally:
 		now = datetime.datetime.now()
-		next_hour = datetime.datetime(now.year, now.month, now.day, now.hour+1, 0, 0)
+		next_hour = datetime.datetime(now.year, now.month, now.day if now.hour/24<1 else now.day+1 , (now.hour+1)%24, 0, 0)
 		remaining = next_hour - now
-		time.sleep(remaining.seconds)
+		time.sleep(remaining.seconds - 300)
